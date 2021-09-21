@@ -1,0 +1,197 @@
+/*J. M. D. */
+#include <bits/stdc++.h>
+using namespace std;
+#define int             long long 
+#define pll             pair<int,int>
+#define ppll            pair<int,pll>
+#define vvll            vector<vector<int>>
+#define sll             stack<int>
+#define qll             queue<int>
+#define vll             vector<int>
+#define vpll            vector<pll>
+#define vc              vector <char>
+#define vs              vector <string>
+#define pb              emplace_back
+#define prq             priority_queue
+#define setbits(x)      __builtin_popcountll(x)
+#define sps(x,y)        fixed<<setprecision(y)<<x
+#define hell            1000000007
+#define rep(i,s,n)      for(int i=s;i<n;i++)
+#define ff              first
+#define mem(arr,x)      memset(arr,x,sizeof(arr))
+#define ss              second
+#define pi              3.14159265358979323846
+#define all(v)          v.begin(),v.end()
+#define allr(x)         x.rbegin(),x.rend()
+#define mp              make_pair
+#define maxn            100005
+#define INF             1000000000
+void fast()
+{
+	ios_base::sync_with_stdio(0);
+	cin.tie(0); cout.tie(0);
+#ifndef ONLINE_JUDGE
+	freopen("input.txt", "r", stdin);
+	freopen("output.txt", "w", stdout);
+#endif
+}
+const int N = (int)2e5 + 100;
+//---------------------------------------------
+int dr[4] = {0, 0, 1,-1};
+int dc[4] = {1,-1, 0, 0};
+ 
+int ddr[8]= {0, 0, 1, -1, 1, -1, 1, -1};
+int ddc[8]= {1, -1, 0, 0, 1, -1, -1, 1};
+
+int ddr1[8]= {1, 1, -1, -1, 2, 2, -2, -2};
+int ddc1[8]= {2, -2, 2, -2, 1, -1, 1, -1};
+//---------------------------------------------
+const int maxN= 10;
+int LCA[maxn][maxN+1];
+set<int> v[maxn];
+int level[maxn], sub[maxn], parent[maxn];
+int res[maxn];
+
+//--------------------------------------------
+void dfs(int node, int lvl, int par){
+	level[node]= lvl;
+	LCA[node][0]= par;
+
+	for(auto child: v[node]){
+		if(child!= par){
+			dfs(child, lvl+1, node);
+		}
+	}
+}
+
+void init(int n){ //fill sparse table;
+     dfs(1,0,-1);  //fill 0 of sparse table
+     
+     for(int i=1;i<=maxN;i++){
+     	for(int j=1;j<=n;j++){
+     		if(LCA[j][i-1]!=-1){
+     			int par= LCA[j][i-1];
+     			LCA[j][i]= LCA[par][i-1];
+     		}
+     	}
+     }
+
+}
+
+int getLCA(int a, int b){
+	if(level[a]>level[b]) swap(a,b);
+	int d= level[b]-level[a];
+
+    //lift till both level are equal
+
+	while(d>0){
+		int i= log2(d);
+		b= LCA[b][i];
+		d-= 1<<i;
+	}
+	if(a==b) return a;  // if both node are same
+
+	//now both level are equal so now lifting
+
+	for(int i= maxN;i>=0;i--){
+		if(LCA[a][i]!=-1 && LCA[a][i]!= LCA[b][i]){
+			a= LCA[a][i];
+			b= LCA[b][i];
+		} 
+	}
+
+	return LCA[a][0];
+
+
+}
+
+
+
+int getdis(int x,int y){
+	int mylca= getLCA(x,y);
+	return level[x]+level[y]-2*level[mylca];
+}
+//////-------------centroid decomp---------------
+int dfs1(int node, int par){
+	sub[node]=1;
+
+	for(auto child: v[node]){
+		if(child!= par){
+			sub[node]+= dfs1(child, node);
+		}
+	}
+	return sub[node];
+}
+
+int dfs2(int node, int par, int n){
+	for(auto child: v[node]){
+		if(child!= par && sub[child]>n/2){
+			return dfs2(child, node, n);
+		} 
+	}
+	return node;
+}
+
+void decompose(int node, int par){
+	int subtree = dfs1(node, -1);
+	int centroid= dfs2(node, par, subtree);
+
+	parent[centroid]= par;
+	for(auto child: v[centroid]){
+      v[child].erase(centroid);
+      decompose(child, centroid);
+	}
+}
+//--------------update & query--------------------
+void update(int node){
+	int curr= node;
+	while(curr!=-1){
+		res[curr]= min(res[curr], getdis(node, curr));
+		curr= parent[curr];
+	}
+}
+
+int query(int node){
+	int curr= node;
+	int ans= INF;
+	while(curr!=-1){
+       ans= min(ans, res[curr]+ getdis(node, curr));
+       curr= parent[curr];
+	}
+	return ans;
+}
+
+
+ 	
+
+int32_t main() {
+     fast();
+    // int t,z;
+    // cin>>t;
+     //rep(z,1,t+1){
+    //cout<<"Case #"<<z<<": "
+    
+    int n,x,y;
+    cin>>n;
+    rep(i,0,n+2) res[i]= INF;
+    rep(i,0,n-1){
+    	                                 cin>>x>>y;
+    	                                 v[x].insert(y);
+    	                                 v[y].insert(x);
+    }
+    init(n);
+    decompose(1,-1);
+
+    int q;
+    cin>>q;
+    while(q--){
+    	cin>>x>>y;
+    	
+    	if(x==1)         update(y);
+    	else             cout<<query(y)<<"\n";
+    	
+    }
+
+    
+    
+}
